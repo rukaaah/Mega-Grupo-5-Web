@@ -89,7 +89,7 @@ export default function Home() {
           value={procurarNome}
           onChange={(e) => setProcurarNome(e.target.value)}
         />
-        {/* implementar logica de filtragem */}
+        {/* //! implementar logica de filtragem, me perdi pra krl */}
         {/* <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as any)}
@@ -114,7 +114,7 @@ export default function Home() {
             {tarefas.map(task => (
               <li key={task.id} className={`task-item ${task.check ? 'completed' : ''}`}>
                 <div className="task-header">
-                  {/* a checkbox n esta atualizando a ui certinho (parte feita com chat) */}
+                  {/* //! a checkbox n esta atualizando a ui certinho (parte feita com chat) */}
                   <input
                     type="checkbox"
                     checked={task.check}

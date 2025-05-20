@@ -9,7 +9,7 @@ export function useTarefas() {
     const [editTarefa, setEditTarefa] = useState<Tarefa | null>(null);
     // estados para armazenar a busca
 
-    // lidar com filtro de tarefas
+    //! lidar com filtro de tarefas
     //? const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
     // Buscar tarefas ao carregar a página

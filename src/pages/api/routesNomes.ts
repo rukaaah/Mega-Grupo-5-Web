@@ -31,9 +31,9 @@ async function postTarefa(req: NextApiRequest, res: NextApiResponse) {
         return res.status(400).json({ error: "Título e prioridade são obrigatórios" });
     }
     const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Corrige para local
-    const dataHora = date || now.toISOString().slice(0, 16); // tava errando o horario, fiz aceitar exatamente a entrada
-    // porem se viesse vazio erraria o tbm, ent fiz uma conta com base na timezone
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); //! Corrige para local
+    const dataHora = date || now.toISOString().slice(0, 16); //! tava errando o horario, fiz aceitar exatamente a entrada
+    //! porem se viesse vazio erraria o tbm, ent fiz uma conta com base na timezone
     try {
         const { data, error } = await supabase
             .from('todoJubileu')
