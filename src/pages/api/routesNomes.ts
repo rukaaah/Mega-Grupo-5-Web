@@ -72,7 +72,7 @@ async function deleteTarefa(req: NextApiRequest, res: NextApiResponse) {
             const { data, error } = await supabase
                 .from('todoJubileu')
                 .delete()
-                .eq('concluida', true)
+                .eq('check', true)
                 .select();
 
             if (error) throw error;
