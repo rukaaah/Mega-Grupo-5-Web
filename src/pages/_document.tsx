@@ -1,15 +1,16 @@
 import { Html, Head, Main, NextScript } from "next/document";
-// coisas global, como o html, head e body
-// o _document é aonde as coisas que são globais ficam
-// header, footer, etc
 
 export default function Document() {
   return (
-    <Html lang="en">
-      <Head />
-      <body className="antialiased">
-        <div>header</div>
-        <Main /> {/* Aqui fica o conteúdo da página */}
+    <Html lang="pt-BR">
+      <Head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>To-Do Jubileu</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <body>
+        <Main />
         <NextScript />
       </body>
     </Html>
