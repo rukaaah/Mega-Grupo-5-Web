@@ -1,9 +1,14 @@
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
-// esqueleto base do HTML, n tem pq mudar
+import Head from "next/head";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-  <Component {...pageProps} />
+    <>
+      <Head>
+        <meta name="description" content="Sistema de tarefas para o Sr. Jubileu" />
+      </Head>
+      <Component {...pageProps} />
+    </>
   );
 }
