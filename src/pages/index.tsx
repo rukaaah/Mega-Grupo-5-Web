@@ -13,6 +13,36 @@ export default function Home() {
     date: new Date().toISOString().split('T')[0],
     });
 
+  const [filtros, setFiltros] = useState({
+    titulo: '',
+    prioridade: '',
+    data: '',
+    descricao: '',
+    ordenar: 'padrao'
+    });
+  
+    const aplicarFiltros = () => {
+      // console.log(filtros.data);
+      fetchTasks({
+        titulo: filtros.titulo,
+        descricao: filtros.descricao,
+        prioridade: filtros.prioridade ? Number(filtros.prioridade) : undefined,
+        data: filtros.data,
+        ordenar: filtros.ordenar
+      });
+    };
+  
+    // Limpa os filtros
+    const limparFiltros = () => {
+      setFiltros({
+        titulo: '',
+        descricao: '',
+        prioridade: '',
+        data: '',
+        ordenar: 'padrao'
+      });
+      fetchTasks();
+    };
   // declara os metodos que foram exportados do hook
   const {
     tarefas,
@@ -22,18 +52,19 @@ export default function Home() {
     MudaCheckTarefa,
     modoEdit,
     editTarefa,
-    setEditTarefa
+    setEditTarefa,
+    fetchTasks
   } = useTarefas();
 
   return (
     <div className="container">
       <h1>Lista de Tarefas do Sr. Jubileu</h1>
       
-      {/* Formulário para adicionar/editar tarefas */}
+      {/* Formulário de tarefa */}
       <form onSubmit={(e) => {
         e.preventDefault();
         handleSubmit(form, setForm);
-        }} className="task-form">
+      }} className="task-form">
         <h2>{editTarefa ? 'Editar Tarefa' : 'Adicionar Tarefa'}</h2>
         
         <div className="form-group">
@@ -81,25 +112,48 @@ export default function Home() {
         )}
       </form>
       
-      {/* Filtros e busca */}
+      {/* Filtros */}
       <div className="filters">
         <input
           type="text"
-          placeholder="Buscar por título ou descrição..."
-          value={procurarNome}
-          onChange={(e) => setProcurarNome(e.target.value)}
+          placeholder="Filtrar por título"
+          value={filtros.titulo}
+          onChange={(e) => setFiltros({...filtros, titulo: e.target.value})}
         />
-        {/* //! implementar logica de filtragem, me perdi pra krl */}
-        {/* <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as any)}
-        >
-          <option value="all">Todas as tarefas</option>
-          <option value="high">Prioridade Alta</option>
-          <option value="medium">Prioridade Média</option>
-          <option value="low">Prioridade Baixa</option>
-        </select> */}
         
+        <input
+          type="text"
+          placeholder="Filtrar por descrição"
+          value={filtros.descricao}
+          onChange={(e) => setFiltros({...filtros, descricao: e.target.value})}
+        />
+        
+        <select
+          value={filtros.prioridade}
+          onChange={(e) => setFiltros({...filtros, prioridade: e.target.value})}
+        >
+          <option value="">Todas prioridades</option>
+          <option value="1">Alta</option>
+          <option value="2">Média</option>
+          <option value="3">Baixa</option>
+        </select>
+        
+        <input
+          type="date"
+          value={filtros.data}
+          onChange={(e) => setFiltros({...filtros, data: e.target.value})}
+        />
+        
+        <select
+          value={filtros.ordenar}
+          onChange={(e) => setFiltros({...filtros, ordenar: e.target.value as 'padrao' | 'alfabetica'})}
+        >
+          <option value="padrao">Ordenação padrão</option>
+          <option value="alfabetica">Ordem alfabética</option>
+        </select>
+        
+        <button onClick={aplicarFiltros}>Aplicar Filtros</button>
+        <button onClick={limparFiltros}>Limpar Filtros</button>
         <button onClick={handleDeleteCompletas} className="delete-completed">
           Limpar concluídas
         </button>
@@ -114,18 +168,17 @@ export default function Home() {
             {tarefas.map(task => (
               <li key={task.id} className={`task-item ${task.check ? 'completed' : ''}`}>
                 <div className="task-header">
-                  {/* //! a checkbox n esta atualizando a ui certinho (parte feita com chat) */}
                   <input
                     type="checkbox"
-                    checked={task.check}
-                    onChange={() => MudaCheckTarefa(task)}
+                    checked={(task.check as boolean)}
+                    onChange={async () => {await MudaCheckTarefa(task); fetchTasks();}}
                   />
                   <h3>{task.titulo}</h3>
                   <span className={`priority-badge priority-${task.prioridade}`}>
                     {task.prioridade === 1 ? 'Alta' : task.prioridade === 2 ? 'Média' : 'Baixa'}
                   </span>
                   <span className="task-date">
-                    {new Date(task.date).toLocaleDateString()}
+                    {new Date(task.date).toLocaleDateString('pt-BR')} às {new Date(task.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
                   </span>
                 </div>
                 
@@ -149,6 +202,7 @@ export default function Home() {
           max-width: 800px;
           margin: 0 auto;
           padding: 20px;
+          font-family: Arial, sans-serif;
         }
         
         .task-form {
@@ -156,6 +210,12 @@ export default function Home() {
           padding: 20px;
           border-radius: 8px;
           margin-bottom: 20px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .task-form h2 {
+          margin-top: 0;
+          color: #333;
         }
         
         .form-group {
@@ -166,6 +226,7 @@ export default function Home() {
           display: block;
           margin-bottom: 5px;
           font-weight: bold;
+          color: #555;
         }
         
         .form-group input,
@@ -175,10 +236,12 @@ export default function Home() {
           padding: 8px;
           border: 1px solid #ddd;
           border-radius: 4px;
+          font-size: 14px;
         }
         
         .form-group textarea {
           min-height: 100px;
+          resize: vertical;
         }
         
         button {
@@ -189,6 +252,8 @@ export default function Home() {
           border: none;
           border-radius: 4px;
           cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s;
         }
         
         button:hover {
@@ -213,26 +278,26 @@ export default function Home() {
         
         .filters {
           display: flex;
+          flex-wrap: wrap;
           gap: 10px;
           margin-bottom: 20px;
+          align-items: center;
         }
         
-        .filters input {
-          flex: 1;
-          padding: 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-        
+        .filters input,
         .filters select {
           padding: 8px;
           border: 1px solid #ddd;
           border-radius: 4px;
+          font-size: 14px;
+          flex: 1;
+          min-width: 150px;
         }
         
         .task-list ul {
           list-style: none;
           padding: 0;
+          margin: 0;
         }
         
         .task-item {
@@ -241,6 +306,11 @@ export default function Home() {
           border-radius: 8px;
           padding: 15px;
           margin-bottom: 10px;
+          transition: all 0.2s;
+        }
+        
+        .task-item:hover {
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .task-item.completed {
@@ -258,6 +328,7 @@ export default function Home() {
         .task-header h3 {
           margin: 0;
           flex: 1;
+          color: #333;
         }
         
         .priority-badge {
@@ -281,10 +352,35 @@ export default function Home() {
           padding-left: 30px;
         }
         
+        .task-details p {
+          margin: 5px 0;
+          color: #555;
+        }
+        
         .task-actions {
           margin-top: 10px;
           display: flex;
           gap: 10px;
+        }
+        
+        @media (max-width: 768px) {
+          .filters {
+            flex-direction: column;
+          }
+          
+          .filters input,
+          .filters select {
+            width: 100%;
+          }
+          
+          .task-header {
+            flex-wrap: wrap;
+          }
+          
+          .task-date {
+            width: 100%;
+            margin-top: 5px;
+          }
         }
       `}</style>
     </div>

@@ -8,13 +8,50 @@ interface Tarefa {
     date: string;
 }
 
-async function getTarefas(res: NextApiResponse) {
+async function getTarefas(req: NextApiRequest, res: NextApiResponse) {
     try {
-        const { data, error } = await supabase
+        const { 
+            titulo, 
+            prioridade, 
+            date, 
+            desc,
+            ordenar 
+          } = req.query;
+
+        let query = supabase
             .from('todoJubileu')
-            .select('id, titulo, prioridade, desc, date')
-            .order('date', { ascending: true })
-            .order('prioridade', { ascending: false })
+            .select('id, titulo, prioridade, desc, date, check')
+            // seta uma query base para pegar os dados
+
+        if (titulo) query = query.ilike('titulo', `%${titulo}%`); // vai pegar todos os titulos que contem o termo
+        if (desc) query = query.ilike('desc', `%${desc}%`); // vai pegar todos os desc que contem o termo
+        if (prioridade) query = query.eq('prioridade', Number(prioridade));  // vai pegar todos os que tem a prioridade exata
+        if (date) {
+            // pega todas as tarefas do dia
+            const dataObj = new Date(date as string);
+            console.log("Data recebida:", dataObj);
+
+            // usar sethours tava mudando o fuso horario, ent resolvi somar 23:59
+            const inicioDia = new Date(dataObj).toISOString().slice(0, 16);
+            const fimDia = new Date(dataObj.getTime() + 86340000).toISOString().slice(0, 16);
+
+            query = query
+                .gte('date', inicioDia)
+                .lte('date', fimDia);
+                // pega datas menores que o fim do dia e maiores que o inicio do dia
+            }
+
+        if (ordenar === 'alfabetica') {
+            query = query.order('titulo', { ascending: true }); // Ordena alfabeticamente
+        } else {
+            query = query
+                .order('check', { ascending: true }) // Não concluídas primeiro
+                .order('prioridade', { ascending: true }) // dentro das n concluidas prioridade mais alta primeiro
+                .order('date', { ascending: true }); // dentro das n concluidas e prio mais alta data mais próxima primeiro
+        }
+
+        const { data, error } = await query;
+
 
         if (error) throw error;
         return res.status(200).json(data);
@@ -46,6 +83,7 @@ async function postTarefa(req: NextApiRequest, res: NextApiResponse) {
             })
             .select();
 
+        console.log("Dados inseridos:", dataHora); 
         if (error) throw error;
         return res.status(201).json(data);
     } catch (error) {
@@ -129,7 +167,7 @@ async function patchTarefa(req: NextApiRequest, res: NextApiResponse) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {
         case 'GET':
-            return await getTarefas(res);
+            return await getTarefas(req, res);
         case 'POST':
             return await postTarefa(req, res);
         case 'DELETE':

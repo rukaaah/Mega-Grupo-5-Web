@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tarefa } from '@/types/tarefa';
 import { setegid } from 'process';
+import { parseAppSegmentConfig } from 'next/dist/build/segment-config/app/app-segment-config';
 
 export function useTarefas() {
     // estados bases para armezenar as tarefas
@@ -18,9 +19,23 @@ export function useTarefas() {
     }, []);
 
     // Função para buscar tarefas da API
-    const fetchTasks = async () => {
+    const fetchTasks = async (filters?:{
+        titulo?: string;
+        descricao?: string;
+        prioridade?: number;
+        data?: string;
+        ordenar?: string;
+    }) => {
     try {
-        const response = await fetch('/api/routesNomes');
+        
+        const params = new URLSearchParams();
+        if(filters?.titulo) params.append('titulo', filters.titulo);
+        if(filters?.descricao) params.append('desc', filters.descricao);
+        if(filters?.prioridade) params.append('prioridade', String(filters.prioridade));
+        if(filters?.data) params.append('date', filters.data);
+        if(filters?.ordenar) params.append('ordenar', filters.ordenar);
+        
+        const response = await fetch(`/api/routesNomes?${params.toString()}`);
 
         if (!response.ok) throw new Error('Erro ao buscar tarefas');
         const data = await response.json();
@@ -141,9 +156,15 @@ export function useTarefas() {
     });
     };
 
-    // implementar a lógica de filtragem
-    // const filteredTasks = tarefas
-    //   .filter();
+    const aplicarFiltros = (filtros: any) => {
+        fetchTasks({
+          titulo: filtros.titulo,
+          prioridade: filtros.prioridade ? Number(filtros.prioridade) : undefined,
+          data: filtros.data,
+          descricao: filtros.descricao,
+          ordenar: filtros.ordenar as 'padrao' | 'alfabetica'
+        });
+      };
 
     // exporta as variaveis q o front vai usar
     return {
