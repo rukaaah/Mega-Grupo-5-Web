@@ -5,6 +5,7 @@ interface Tarefa {
     titulo: string;
     descricao: string;
     prioridade: number;
+    state: string;
     date: string;
 }
 
@@ -13,14 +14,14 @@ async function getTarefas(req: NextApiRequest, res: NextApiResponse) {
         const { 
             titulo, 
             prioridade, 
-            date, 
             desc,
-            ordenar 
+            date, 
+            ordenar, 
           } = req.query;
 
         let query = supabase
             .from('todoJubileu')
-            .select('id, titulo, prioridade, desc, date, check')
+            .select('id, titulo, prioridade, desc, date, check, state')
             // seta uma query base para pegar os dados
 
         if (titulo) query = query.ilike('titulo', `%${titulo}%`); // vai pegar todos os titulos que contem o termo
@@ -62,15 +63,15 @@ async function getTarefas(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function postTarefa(req: NextApiRequest, res: NextApiResponse) {
-    const { titulo, descricao, prioridade, date }: Tarefa = req.body;
+    const { titulo, descricao, prioridade, date, state }: Tarefa = req.body;
 
     if (!titulo || !prioridade) {
         return res.status(400).json({ error: "Título e prioridade são obrigatórios" });
     }
     const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); //! Corrige para local
-    const dataHora = date || now.toISOString().slice(0, 16); //! tava errando o horario, fiz aceitar exatamente a entrada
-    //! porem se viesse vazio erraria o tbm, ent fiz uma conta com base na timezone
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Corrige para local
+    const dataHora = date || now.toISOString().slice(0, 16); 
+ 
     try {
         const { data, error } = await supabase
             .from('todoJubileu')
@@ -79,6 +80,7 @@ async function postTarefa(req: NextApiRequest, res: NextApiResponse) {
                 desc: descricao,
                 prioridade,
                 check: false,
+                state: state,
                 date: dataHora,
             })
             .select();

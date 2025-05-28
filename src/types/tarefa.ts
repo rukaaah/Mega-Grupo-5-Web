@@ -4,5 +4,6 @@ export interface Tarefa {
     desc: string;
     prioridade: number;
     date: string;
+    state: string;
     check?: boolean;
   }
