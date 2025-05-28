@@ -10,6 +10,7 @@ export default function Home() {
     titulo: '',
     descricao: '',
     prioridade: 1,
+    state: '',
     date: new Date().toISOString().split('T')[0],
     });
 
@@ -21,28 +22,6 @@ export default function Home() {
     ordenar: 'padrao'
     });
   
-    const aplicarFiltros = () => {
-      // console.log(filtros.data);
-      fetchTasks({
-        titulo: filtros.titulo,
-        descricao: filtros.descricao,
-        prioridade: filtros.prioridade ? Number(filtros.prioridade) : undefined,
-        data: filtros.data,
-        ordenar: filtros.ordenar
-      });
-    };
-  
-    // Limpa os filtros
-    const limparFiltros = () => {
-      setFiltros({
-        titulo: '',
-        descricao: '',
-        prioridade: '',
-        data: '',
-        ordenar: 'padrao'
-      });
-      fetchTasks();
-    };
   // declara os metodos que foram exportados do hook
   const {
     tarefas,
@@ -53,7 +32,10 @@ export default function Home() {
     modoEdit,
     editTarefa,
     setEditTarefa,
-    fetchTasks
+    fetchTasks,
+    aplicarFiltros,
+    limparFiltros,
+    agruparState
   } = useTarefas();
 
   return (
@@ -105,7 +87,21 @@ export default function Home() {
             onChange={(e) => setForm({...form, date: e.target.value})}
           />
         </div>
-        
+
+        <div className="form-group">
+          <label>Estado:</label>
+          <select
+            value={form.state}
+            onChange={(e) => setForm({...form, state: e.target.value})}
+          >
+            <option value="To Do">To Do</option>
+            <option value="Doing">Doing</option>
+            <option value="Done">Done</option>
+            <option value="Backlog">Backlog</option>
+            <option value="Stopped">Stopped</option>
+          </select>
+        </div>
+
         <button type="submit">{editTarefa ? 'Atualizar' : 'Adicionar'}</button>
         {editTarefa && (
           <button type="button" onClick={() => setEditTarefa(null)}>Cancelar</button>
@@ -152,8 +148,8 @@ export default function Home() {
           <option value="alfabetica">Ordem alfabética</option>
         </select>
         
-        <button onClick={aplicarFiltros}>Aplicar Filtros</button>
-        <button onClick={limparFiltros}>Limpar Filtros</button>
+        <button onClick={(e) => aplicarFiltros(filtros)}>Aplicar Filtros</button>
+        <button onClick={(e) => limparFiltros(setFiltros)}>Limpar Filtros</button>
         <button onClick={handleDeleteCompletas} className="delete-completed">
           Limpar concluídas
         </button>
@@ -161,41 +157,46 @@ export default function Home() {
       
       {/* Lista de tarefas */}
       <div className="task-list">
-        {tarefas.length === 0 ? (
-          <p>Nenhuma tarefa encontrada</p>
-        ) : (
-          <ul>
-            {tarefas.map(task => (
-              <li key={task.id} className={`task-item ${task.check ? 'completed' : ''}`}>
-                <div className="task-header">
-                  <input
-                    type="checkbox"
-                    checked={(task.check as boolean)}
-                    onChange={async () => {await MudaCheckTarefa(task); fetchTasks();}}
-                  />
-                  <h3>{task.titulo}</h3>
-                  <span className={`priority-badge priority-${task.prioridade}`}>
-                    {task.prioridade === 1 ? 'Alta' : task.prioridade === 2 ? 'Média' : 'Baixa'}
-                  </span>
-                  <span className="task-date">
-                    {new Date(task.date).toLocaleDateString('pt-BR')} às {new Date(task.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
-                  </span>
-                </div>
-                
-                <div className="task-details">
-                  <p>{task.desc}</p>
-                  <div className="task-actions">
-                    <button onClick={() => modoEdit(task, setForm)}>Editar</button>
-                    <button onClick={() => handleDelete(task.id)} className="delete">
-                      Excluir
-                    </button>
+      {tarefas.length === 0 ? (
+        <p>Nenhuma tarefa encontrada</p>
+      ) : (
+        Object.entries(agruparState(tarefas)).map(([state, tasks]) => (
+          <div key={state} className="state-group">
+            <h2>{state}</h2>
+            <ul>
+              {tasks.map(task => (
+                <li key={task.id} className={`task-item ${task.check ? 'completed' : ''}`}>
+                  <div className="task-header">
+                    <input
+                      type="checkbox"
+                      checked={(task.check as boolean)}
+                      onChange={async () => {await MudaCheckTarefa(task); fetchTasks();}}
+                    />
+                    <h3>{task.titulo}</h3>
+                    <span className={`priority-badge priority-${task.prioridade}`}>
+                      {task.prioridade === 1 ? 'Alta' : task.prioridade === 2 ? 'Média' : 'Baixa'}
+                    </span>
+                    <span className="task-date">
+                      {new Date(task.date).toLocaleDateString('pt-BR')} às {new Date(task.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                    </span>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  
+                  <div className="task-details">
+                    <p>{task.desc}</p>
+                    <div className="task-actions">
+                      <button onClick={() => modoEdit(task, setForm)}>Editar</button>
+                      <button onClick={() => handleDelete(task.id)} className="delete">
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
+    </div>
       
       <style jsx>{`
         .container {
@@ -382,6 +383,19 @@ export default function Home() {
             margin-top: 5px;
           }
         }
+          .state-group {
+            margin-bottom: 30px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+          }
+
+          .state-group h2 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            color: #333;
+          }
       `}</style>
     </div>
   );

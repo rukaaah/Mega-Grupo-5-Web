@@ -10,9 +10,6 @@ export function useTarefas() {
     const [editTarefa, setEditTarefa] = useState<Tarefa | null>(null);
     // estados para armazenar a busca
 
-    //! lidar com filtro de tarefas
-    //? const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-
     // Buscar tarefas ao carregar a página
     useEffect(() => {
     fetchTasks();
@@ -24,6 +21,7 @@ export function useTarefas() {
         descricao?: string;
         prioridade?: number;
         data?: string;
+        state?: string;
         ordenar?: string;
     }) => {
     try {
@@ -51,7 +49,6 @@ export function useTarefas() {
     
     try {
 
-        //! n me pergunte, pedi ajuda pro gpt
         // esta definindo a route base para o metodo
         // se a variavel editTarefa estiver preenchida
         // ele vai usar o id da tarefa para editar
@@ -77,6 +74,7 @@ export function useTarefas() {
         descricao: '',
         prioridade: 1,
         date: form.date,
+        state: form.state
         });
         setEditTarefa(null);
 
@@ -119,7 +117,6 @@ export function useTarefas() {
     }
     };
 
-    //! fiz meio por cima, fiquei meio perdido na hr de mexer tão diretamente com a ui
     const MudaCheckTarefa = async (task: Tarefa) => {
     const NovoCheck = { ...task, check: !task.check };
 
@@ -144,26 +141,71 @@ export function useTarefas() {
     }
     };
 
-    //! faz entrar no modo tarefa, muda toda a interface da task para a tarefa anterior (front end?)
-    //! deixar pra eles fazerem?
     const modoEdit = (task: Tarefa, setForm: Function) => {
     setEditTarefa(task);
     setForm({
         titulo: task.titulo,
         descricao: task.desc,
         prioridade: task.prioridade,
+        state: task.state,
         date: task.date.slice(0, 16),
     });
     };
 
     const aplicarFiltros = (filtros: any) => {
-        fetchTasks({
-          titulo: filtros.titulo,
-          prioridade: filtros.prioridade ? Number(filtros.prioridade) : undefined,
-          data: filtros.data,
-          descricao: filtros.descricao,
-          ordenar: filtros.ordenar as 'padrao' | 'alfabetica'
+      // console.log(filtros.data);
+      fetchTasks({
+        titulo: filtros.titulo,
+        descricao: filtros.descricao,
+        prioridade: filtros.prioridade ? Number(filtros.prioridade) : undefined,
+        data: filtros.data,
+        ordenar: filtros.ordenar
+      });
+    };
+  
+    // Limpa os filtros
+    const limparFiltros = (setFiltros: Function) => {
+      setFiltros({
+        titulo: '',
+        descricao: '',
+        prioridade: '',
+        data: '',
+        ordenar: 'padrao'
+      });
+      fetchTasks();
+    };
+
+    const agruparState = (tasks: Tarefa[]) => {
+        // agrupa as tarefas por estado
+        // se não houver state, define como 'To Do' (garantia)
+        const grouped = tasks.reduce((acc, task) => {
+          const state = task.state || 'To Do'; // Default para 'todo' se não houver state
+          if (!acc[state]) {
+            acc[state] = [];
+          }
+          acc[state].push(task);
+          return acc;
+        }, {} as Record<string, Tarefa[]>);
+      
+        // ordem que os grupos devem ser exibidos
+        const order = ['Backlog', 'To Do', 'Doing', 'Done', 'Stopped'];
+        
+        // objeto ordenado
+        const ordered: Record<string, Tarefa[]> = {};
+        order.forEach(state => {
+          if (grouped[state]) {
+            ordered[state] = grouped[state];
+          }
         });
+      
+        // arruma qlqr estado que não esteja na ordem
+        Object.keys(grouped).forEach(state => {
+          if (!order.includes(state)) {
+            ordered[state] = grouped[state];
+          }
+        });
+      
+        return ordered;
       };
 
     // exporta as variaveis q o front vai usar
@@ -177,6 +219,9 @@ export function useTarefas() {
         handleDeleteCompletas,
         MudaCheckTarefa,
         modoEdit,
+        aplicarFiltros,
+        limparFiltros,
+        agruparState
     };
 
 }
