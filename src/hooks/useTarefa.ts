@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Tarefa } from '@/types/tarefa';
-import { setegid } from 'process';
-import { parseAppSegmentConfig } from 'next/dist/build/segment-config/app/app-segment-config';
+import { headers } from 'next/headers';
 
 export function useTarefas() {
     // estados bases para armezenar as tarefas
     const [tarefas, setTarefas] = useState<Tarefa[]>([]);
     // estado para armazenar a tarefa que está sendo editada
     const [editTarefa, setEditTarefa] = useState<Tarefa | null>(null);
-    // estados para armazenar a busca
+    const [error, setError] = useState<string | null>(null);
 
     // Buscar tarefas ao carregar a página
     useEffect(() => {
@@ -24,71 +24,88 @@ export function useTarefas() {
         state?: string;
         ordenar?: string;
     }) => {
-    try {
-        
-        const params = new URLSearchParams();
-        if(filters?.titulo) params.append('titulo', filters.titulo);
-        if(filters?.descricao) params.append('desc', filters.descricao);
-        if(filters?.prioridade) params.append('prioridade', String(filters.prioridade));
-        if(filters?.data) params.append('date', filters.data);
-        if(filters?.ordenar) params.append('ordenar', filters.ordenar);
-        
-        const response = await fetch(`/api/routesNomes?${params.toString()}`);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error('Usuário não autenticado');
+            
+            const params = new URLSearchParams();
+            if(filters?.titulo) params.append('titulo', filters.titulo);
+            if(filters?.descricao) params.append('desc', filters.descricao);
+            if(filters?.prioridade) params.append('prioridade', String(filters.prioridade));
+            if(filters?.data) params.append('date', filters.data);
+            if(filters?.ordenar) params.append('ordenar', filters.ordenar);
+            
+            const response = await fetch(`/api/routesNomes?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
 
-        if (!response.ok) throw new Error('Erro ao buscar tarefas');
-        const data = await response.json();
+            if (!response.ok) throw new Error('Erro ao buscar tarefas');
+            const data = await response.json();
 
-        setTarefas(data);
+            setTarefas(data);
 
-    } catch (error) {
-        console.error('Erro:', error);
-    }
-    };
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+        };
 
     const handleSubmit = async (form: any, setForm: Function) => {
     
-    try {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error('Usuário não autenticado');
 
-        // esta definindo a route base para o metodo
-        // se a variavel editTarefa estiver preenchida
-        // ele vai usar o id da tarefa para editar
-        // se não, ele vai usar a rota padrãos
-        const url = editTarefa 
-        ? `/api/routesNomes?id=${editTarefa.id}` 
-        : '/api/routesNomes';
-        const method = editTarefa ? 'PATCH' : 'POST';
+            // esta definindo a route base para o metodo
+            // se a variavel editTarefa estiver preenchida
+            // ele vai usar o id da tarefa para editar
+            // se não, ele vai usar a rota padrãos
+            const url = editTarefa 
+            ? `/api/routesNomes?id=${editTarefa.id}` 
+            : '/api/routesNomes';
+            const method = editTarefa ? 'PATCH' : 'POST';
 
-        // usando a route base definida acima
-        const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-        });
+            // usando a route base definida acima
+            const response = await fetch(url, {
+            method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify(form),
+            });
 
-        if (!response.ok) throw new Error('Erro ao salvar tarefa');
+            if (!response.ok) throw new Error('Erro ao salvar tarefa');
 
-        // resetando o formulário
-        fetchTasks();
-        setForm({
-        titulo: '',
-        descricao: '',
-        prioridade: 1,
-        date: form.date,
-        state: form.state
-        });
-        setEditTarefa(null);
+            // resetando o formulário
+            fetchTasks();
+            setForm({
+            titulo: '',
+            descricao: '',
+            prioridade: 1,
+            date: form.date,
+            state: form.state
+            });
+            setEditTarefa(null);
 
-    } catch (error) {
-        console.error('Erro:', error);
-    }
-    };
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+        };
 
     // Função para deletar tarefa
     const handleDelete = async (id: number) => {
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Usuário não autenticado');
+
         // vai tentar deletar a tarefa usando o id
         const response = await fetch(`/api/routesNomes?id=${id}`, {
         method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${session.access_token}`
+        }
         });
         
         //lança erro
@@ -104,9 +121,15 @@ export function useTarefas() {
     // Função para deletar tarefas concluídas
     const handleDeleteCompletas = async () => {
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Usuário não autenticado');
+
         // vai tentar deletar as tarefas concluídas
         const response = await fetch('/api/routesNomes', {
         method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${session.access_token}`
+        }
         });
         
         if (!response.ok) throw new Error('Erro ao deletar tarefas concluídas');
@@ -121,10 +144,16 @@ export function useTarefas() {
     const NovoCheck = { ...task, check: !task.check };
 
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Usuário não autenticado');
+
         // usa um patch só pra mudar o check
         const response = await fetch(`/api/routesNomes?id=${task.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ check: NovoCheck.check }),
         });
         
@@ -145,7 +174,7 @@ export function useTarefas() {
     setEditTarefa(task);
     setForm({
         titulo: task.titulo,
-        descricao: task.desc,
+        descricao: task.descricao,
         prioridade: task.prioridade,
         state: task.state,
         date: task.date.slice(0, 16),
