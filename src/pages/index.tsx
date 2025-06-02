@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTarefas } from '@/hooks/useTarefa';
+import { useSign } from '@/hooks/useSign';
+import { sign } from 'crypto';
 
 
 export default function Home() {
@@ -23,6 +25,8 @@ export default function Home() {
     });
   
   // declara os metodos que foram exportados do hook
+  const { signOut } = useSign();
+
   const {
     tarefas,
     handleSubmit,
@@ -38,7 +42,9 @@ export default function Home() {
     agruparState
   } = useTarefas();
 
+
   return (
+    
     <div className="container">
       <h1>Lista de Tarefas do Sr. Jubileu</h1>
       
@@ -182,7 +188,7 @@ export default function Home() {
                   </div>
                   
                   <div className="task-details">
-                    <p>{task.desc}</p>
+                    <p>{task.descricao}</p>
                     <div className="task-actions">
                       <button onClick={() => modoEdit(task, setForm)}>Editar</button>
                       <button onClick={() => handleDelete(task.id)} className="delete">
@@ -196,6 +202,12 @@ export default function Home() {
           </div>
         ))
       )}
+      <button 
+      onClick={signOut}
+      className="logout-button"
+      >
+      Sair
+    </button>
     </div>
       
       <style jsx>{`
