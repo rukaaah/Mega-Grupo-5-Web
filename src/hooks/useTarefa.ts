@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Tarefa } from '@/types/tarefa';
-import { headers } from 'next/headers';
+import { toast } from 'react-toastify';
 
 export function useTarefas() {
     // estados bases para armezenar as tarefas
@@ -26,7 +26,12 @@ export function useTarefas() {
     }) => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) throw new Error('Usuário não autenticado');
+            if (!session) {
+                const authError = new Error('Usuário não autenticado');
+                setError(authError.message);
+                toast.info(authError.message); 
+                return
+            };
             
             const params = new URLSearchParams();
             if(filters?.titulo) params.append('titulo', filters.titulo);
@@ -43,19 +48,24 @@ export function useTarefas() {
 
             if (!response.ok) throw new Error('Erro ao buscar tarefas');
             const data = await response.json();
-
             setTarefas(data);
 
         } catch (error) {
             console.error('Erro:', error);
+            toast.error("erro ao buscar tarefas");
         }
         };
 
-    const handleSubmit = async (form: any, setForm: Function) => {
+    const handleSubmit = async (form: any, setForm: Function, filters?: any) => {
     
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) throw new Error('Usuário não autenticado');
+            if (!session) {
+                const authError = new Error('Usuário não autenticado');
+                setError(authError.message);
+                toast.info(authError.message); 
+                return
+            };
 
             // esta definindo a route base para o metodo
             // se a variavel editTarefa estiver preenchida
@@ -76,10 +86,10 @@ export function useTarefas() {
             body: JSON.stringify(form),
             });
 
-            if (!response.ok) throw new Error('Erro ao salvar tarefa');
+            if (!response.ok) throw response.statusText;
 
             // resetando o formulário
-            fetchTasks();
+            fetchTasks(filters || null);
             setForm({
             titulo: '',
             descricao: '',
@@ -91,6 +101,7 @@ export function useTarefas() {
 
         } catch (error) {
             console.error('Erro:', error);
+            toast.error("erro ao salvar tarefa");
         }
         };
 
@@ -98,7 +109,12 @@ export function useTarefas() {
     const handleDelete = async (id: number) => {
     try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Usuário não autenticado');
+        if (!session) {
+            const authError = new Error('Usuário não autenticado');
+            setError(authError.message);
+            toast.info(authError.message); 
+            return
+        };
 
         // vai tentar deletar a tarefa usando o id
         const response = await fetch(`/api/routesNomes?id=${id}`, {
@@ -109,12 +125,13 @@ export function useTarefas() {
         });
         
         //lança erro
-        if (!response.ok) throw new Error('Erro ao deletar tarefa');
+        if (!response.ok) throw response.statusText;
         
         // se não der erro, atualiza a lista de tarefas
         fetchTasks();
     } catch (error) {
         console.error('Erro:', error);
+        toast.error("erro ao deletar tarefa");
     }
     };
 
@@ -122,7 +139,12 @@ export function useTarefas() {
     const handleDeleteCompletas = async () => {
     try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Usuário não autenticado');
+        if (!session) {
+            const authError = new Error('Usuário não autenticado');
+            setError(authError.message);
+            toast.info(authError.message); 
+            return
+        };
 
         // vai tentar deletar as tarefas concluídas
         const response = await fetch('/api/routesNomes', {
@@ -132,11 +154,12 @@ export function useTarefas() {
         }
         });
         
-        if (!response.ok) throw new Error('Erro ao deletar tarefas concluídas');
+        if (!response.ok) throw response.statusText;
         
         fetchTasks();
     } catch (error) {
         console.error('Erro:', error);
+        toast.error("erro ao deletar tarefas concluídas");
     }
     };
 
@@ -145,8 +168,18 @@ export function useTarefas() {
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Usuário não autenticado');
-
+        if (!session) {
+            const authError = new Error('Usuário não autenticado');
+            setError(authError.message);
+            toast.info(authError.message); 
+            return
+        };
+        let NovoState = NovoCheck.state || 'To Do'; // garante que o state esteja definido
+        if (NovoCheck.state == 'Done') {
+            NovoState = 'To Do';
+        }else{
+            NovoState = 'Done';
+        }
         // usa um patch só pra mudar o check
         const response = await fetch(`/api/routesNomes?id=${task.id}`, {
         method: 'PATCH',
@@ -154,10 +187,13 @@ export function useTarefas() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ check: NovoCheck.check }),
+        body: JSON.stringify({ 
+            check: NovoCheck.check,
+            state: NovoState, // garante que o state esteja definido
+        }),
         });
         
-        if (!response.ok) throw new Error('Erro ao atualizar tarefa');
+        if (!response.ok) throw response.statusText;
 
         // atualiza a lista de tarefas
         // e força o estado do banco de dados na lista da UI
@@ -167,18 +203,23 @@ export function useTarefas() {
         
     } catch (error) {
         console.error('Erro:', error);
+        toast.error("erro ao atualizar tarefa");
     }
     };
 
     const modoEdit = (task: Tarefa, setForm: Function) => {
     setEditTarefa(task);
-    setForm({
-        titulo: task.titulo,
-        descricao: task.descricao,
-        prioridade: task.prioridade,
-        state: task.state,
-        date: task.date.slice(0, 16),
-    });
+    try {
+        setForm({
+                titulo: task.titulo,
+                descricao: task.desc,
+                prioridade: task.prioridade,
+                state: task.state,
+                date: task.date.slice(0, 16),
+            });
+        } catch (error) {
+            console.error('Erro ao definir modo de edição:', error);
+        }
     };
 
     const aplicarFiltros = (filtros: any) => {

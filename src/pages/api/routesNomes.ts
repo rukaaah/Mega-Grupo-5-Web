@@ -92,7 +92,7 @@ async function getTarefas(req: NextApiRequest, res: NextApiResponse) {
 async function postTarefa(req: NextApiRequest, res: NextApiResponse) {
     try {
         const user = await getAuthenticatedUser(req);
-        const { titulo, descricao, prioridade, date, state }: Tarefa = req.body;
+        const { titulo, desc: descricao, prioridade, date, state }: Tarefa = req.body;
 
         if (!titulo || !prioridade) {
             return res.status(400).json({ error: "Título e prioridade são obrigatórios" });

@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AuthError } from '@supabase/supabase-js';
-import { Router, useRouter } from 'next/router';
+import { useRouter } from 'next/router';
 
 export function useSign() {
     const router = useRouter();
     const [session, setSession] = useState(null);
     const [error, setError] = useState<string | null>(null);
+    const [UserEmail, SetUserEmail] = useState<string | null>(null);
+
+    useEffect(() => {
+        handleEmail();
+        
+    })
 
     // Verifica a sessão atual do usuário
     // handleauth('login ou signup', { email, password })
@@ -33,10 +39,16 @@ export function useSign() {
         setSession(null);
     };
 
+    const handleEmail = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        SetUserEmail((user?.email || 'Usuário não autenticado'));
+    };
+
     return {
         session,
         error,
         handleAuth,
-        signOut
+        signOut,
+        UserEmail
     };
 }

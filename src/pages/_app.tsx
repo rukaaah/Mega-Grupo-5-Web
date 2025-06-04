@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
-import { Session } from '@supabase/supabase-js';
+import { AuthError, Session } from '@supabase/supabase-js';
 import '../styles/globals.css';
+import styles from '@/styles/toast.module.css'
+import { ToastContainer } from 'react-toastify';
+const authError = {
+  backgroundColor: '#f44336',
+}
 
 export default function App({ Component, pageProps }: AppProps) {
   const [session, setSession] = useState<Session | null>(null);
@@ -33,5 +38,11 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => subscription.unsubscribe();
   }, []);
   // retorna a session para os componentes
-  return <Component {...pageProps} session={session} />;
+  // retorna o container do toast
+  return (
+      <>
+        <Component {...pageProps} session={session} />;
+        <ToastContainer />
+      </>
+    );
 }
