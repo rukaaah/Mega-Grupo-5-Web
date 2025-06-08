@@ -11,7 +11,6 @@ export function useSign() {
 
     useEffect(() => {
         handleEmail();
-        
     })
 
     // Verifica a sessão atual do usuário
@@ -28,7 +27,6 @@ export function useSign() {
         return data;
         } catch (error) {
         setError(error instanceof AuthError ? error.message : 'Erro desconhecido');
-        throw error;
         }
     };
 
